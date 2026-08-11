@@ -28,7 +28,11 @@
     border-radius:12px;background:#9be24a;color:#12210a;cursor:pointer;box-shadow:0 4px 0 #000}
   button:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
   button:disabled{background:#5a6455;color:#2c3328;cursor:default}
-  #items{display:grid;grid-template-columns:repeat(6,96px);gap:6px;max-width:94vw;max-height:62vh;overflow-y:auto;padding:4px}
+  #items{display:grid;grid-template-columns:repeat(6,96px);gap:6px;max-width:94vw;max-height:62vh;overflow-y:auto;padding:4px;touch-action:pan-y}
+  body.touch #items{grid-template-columns:repeat(3,1fr);max-width:96vw}
+  body.touch #abar{bottom:auto;top:126px;left:auto;right:12px;text-align:right;font-size:12px}
+  body.touch #callbtn{bottom:196px;font-size:14px;padding:9px 16px}
+  body.touch #shopkeys{display:none}
   .tile{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;background:#243019;
     border:3px solid #000;border-radius:10px;color:#fff;box-shadow:0 3px 0 #000;margin:0;cursor:pointer}
   .tile .ic{font-size:22px;line-height:1.1}
@@ -83,7 +87,7 @@
   <h1 style="font-size:34px;margin-bottom:2px">WAVE SURVIVED!</h1>
   <div class="sub coin" id="shopcoins" style="margin-bottom:8px"></div>
   <div id="items"></div>
-  <div class="sub" style="font-size:13px;margin:8px 0 0">Q swap gun · E dog · X chickens · R airstrike · F decoy · SPACE shockwave · C mine · T turret · ENTER skip stuck wave</div>
+  <div class="sub" id="shopkeys" style="font-size:13px;margin:8px 0 0">Q swap gun · E dog · X chickens · R airstrike · F decoy · SPACE shockwave · C mine · T turret · ENTER skip stuck wave</div>
   <button id="nextbtn" style="margin-top:8px;background:#ffd54a">NEXT WAVE ➜</button>
 </div>
 <div id="abar"></div>
