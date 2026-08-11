@@ -8,10 +8,12 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#1a1f16;font-family:system-ui,sans-serif;user-select:none;touch-action:none;overscroll-behavior:none}
   canvas{display:block;cursor:none;touch-action:none}
   .touchonly{display:none}
-  body.touch #joystick{display:block}
+  body.touch #movezone{display:block}
   body.touch #abilities{display:flex}
-  #joystick{position:fixed;left:22px;bottom:22px;width:110px;height:110px;border-radius:50%;
-    background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.3);z-index:7}
+  #movezone{position:fixed;left:0;top:0;bottom:0;width:55%;z-index:6}
+  #joystick{position:fixed;display:none;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;
+    background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.3);z-index:7;pointer-events:none}
+  #joystick.active{display:block}
   #stick{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;
     border-radius:50%;background:rgba(255,255,255,.5);border:3px solid rgba(0,0,0,.4);pointer-events:none}
   #abilities{position:fixed;right:14px;bottom:14px;z-index:7;flex-wrap:wrap-reverse;width:228px;
@@ -36,9 +38,13 @@
   body.touch #items{grid-template-columns:repeat(3,1fr);max-width:96vw}
   body.touch #shopkeys{display:none}
   /* mobile HUD: slim top strip (hp/coins/score) + call-next-wave, wave/weapon/xp text dropped to fit */
-  body.touch #hud{display:flex;align-items:center;gap:8px;top:4px;left:6px;right:6px}
-  body.touch #hpbar{width:70px;height:10px;margin:0;flex:none}
-  body.touch #wave,body.touch #weap,body.touch #xpbar{display:none}
+  body.touch #hud{display:grid;grid-template-columns:74px auto;column-gap:8px;row-gap:2px;
+    align-items:center;top:4px;left:6px;right:6px}
+  body.touch #hpbar{grid-column:1;grid-row:1;width:70px;height:10px;margin:0}
+  body.touch #xpbar{display:block;grid-column:1;grid-row:2;width:70px;height:6px;margin:0}
+  body.touch #coins{grid-column:2;grid-row:1}
+  body.touch #score{grid-column:2;grid-row:2}
+  body.touch #wave,body.touch #weap{display:none}
   body.touch .stat{font-size:12px;margin:0}
   body.touch #abar{bottom:auto;top:26px;left:auto;right:6px;text-align:right;font-size:11px}
   body.touch #callbtn{top:auto;bottom:140px;left:50%;right:auto;transform:translateX(-50%);
@@ -108,7 +114,8 @@
 <div id="abar"></div>
 <button id="callbtn">☠ CALL NEXT WAVE</button>
 
-<div id="joystick" class="touchonly"><div id="stick"></div></div>
+<div id="movezone" class="touchonly"></div>
+<div id="joystick"><div id="stick"></div></div>
 <div id="abilities" class="touchonly">
   <button class="abtn" data-k="q">🔫</button>
   <button class="abtn" data-k="e">🐕<span class="pr"></span></button>
@@ -225,7 +232,8 @@ if(TOUCH){
   document.body.classList.add('touch');
 
   (function joystick(){
-    const zone = document.getElementById('joystick'), stick = document.getElementById('stick');
+    // floating joystick: appears wherever you first touch down in the left movement zone
+    const zone = document.getElementById('movezone'), pad = document.getElementById('joystick'), stick = document.getElementById('stick');
     let id = null, cx = 0, cy = 0;
     const max = 40, dead = 8;
     function setDir(dx, dy){
@@ -238,9 +246,12 @@ if(TOUCH){
       if(Math.sin(ang) < -.3) keys.w = true;
     }
     zone.addEventListener('touchstart', e => {
+      if(id !== null) return; // already tracking a finger
       e.preventDefault();
       const t = e.changedTouches[0]; id = t.identifier;
-      const r = zone.getBoundingClientRect(); cx = r.left + r.width/2; cy = r.top + r.height/2;
+      cx = t.clientX; cy = t.clientY;
+      pad.style.left = cx + 'px'; pad.style.top = cy + 'px';
+      pad.classList.add('active');
     });
     zone.addEventListener('touchmove', e => {
       for(const t of e.changedTouches){
@@ -256,7 +267,7 @@ if(TOUCH){
     function end(e){
       for(const t of e.changedTouches){
         if(t.identifier !== id) continue;
-        id = null; stick.style.transform = ''; setDir(0,0);
+        id = null; stick.style.transform = ''; setDir(0,0); pad.classList.remove('active');
       }
     }
     zone.addEventListener('touchend', end);
