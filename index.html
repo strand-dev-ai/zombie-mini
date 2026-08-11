@@ -10,12 +10,7 @@
   .touchonly{display:none}
   body.touch #movezone{display:block}
   body.touch #abilities{display:flex}
-  #movezone{position:fixed;left:0;top:0;bottom:0;width:55%;z-index:6}
-  #joystick{position:fixed;display:none;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;
-    background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.3);z-index:7;pointer-events:none}
-  #joystick.active{display:block}
-  #stick{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;
-    border-radius:50%;background:rgba(255,255,255,.5);border:3px solid rgba(0,0,0,.4);pointer-events:none}
+  #movezone{position:fixed;inset:0;z-index:6} /* whole screen; buttons on top still get their own taps */
   #abilities{position:fixed;right:14px;bottom:14px;z-index:7;flex-wrap:wrap-reverse;width:228px;
     justify-content:flex-end;gap:6px}
   .abtn{position:relative;width:52px;height:52px;padding:0;margin:0;border-radius:50%;font-size:22px;
@@ -115,7 +110,6 @@
 <button id="callbtn">☠ CALL NEXT WAVE</button>
 
 <div id="movezone" class="touchonly"></div>
-<div id="joystick"><div id="stick"></div></div>
 <div id="abilities" class="touchonly">
   <button class="abtn" data-k="q">🔫</button>
   <button class="abtn" data-k="e">🐕<span class="pr"></span></button>
@@ -249,8 +243,8 @@ if(TOUCH){
   document.body.classList.add('touch');
 
   (function joystick(){
-    // floating joystick: appears wherever you first touch down in the left movement zone
-    const zone = document.getElementById('movezone'), pad = document.getElementById('joystick'), stick = document.getElementById('stick');
+    // invisible: direction tracked from raw finger delta, no on-screen pad ever drawn
+    const zone = document.getElementById('movezone');
     let id = null, cx = 0, cy = 0;
     const max = 40, dead = 8;
     function setDir(dx, dy){
@@ -267,8 +261,6 @@ if(TOUCH){
       e.preventDefault();
       const t = e.changedTouches[0]; id = t.identifier;
       cx = t.clientX; cy = t.clientY;
-      pad.style.left = cx + 'px'; pad.style.top = cy + 'px';
-      pad.classList.add('active');
     });
     zone.addEventListener('touchmove', e => {
       for(const t of e.changedTouches){
@@ -277,14 +269,13 @@ if(TOUCH){
         let dx = t.clientX - cx, dy = t.clientY - cy;
         const mag = Math.hypot(dx,dy);
         if(mag > max){ dx = dx/mag*max; dy = dy/mag*max; }
-        stick.style.transform = `translate(${dx}px,${dy}px)`;
         setDir(dx,dy);
       }
     }, {passive:false});
     function end(e){
       for(const t of e.changedTouches){
         if(t.identifier !== id) continue;
-        id = null; stick.style.transform = ''; setDir(0,0); pad.classList.remove('active');
+        id = null; setDir(0,0);
       }
     }
     zone.addEventListener('touchend', end);
