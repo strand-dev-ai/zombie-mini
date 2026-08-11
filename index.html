@@ -1542,6 +1542,8 @@ function updateHud(){
     : (G.rush >= 4 ? '☠ MAX 5 WAVES!' : `☠ CALL NEXT WAVE +${waveBonus()}🪙 (${G.rush+1}/5)`);
 
   if(TOUCH){ // gray out + price-tag ability buttons not bought yet (tap to buy mid-game)
+    // hide the ability bar outside of 'fight' so it doesn't ghost through the shop/perks/death overlays
+    document.getElementById('abilities').style.display = state === 'fight' ? 'flex' : 'none';
     for(const b of document.querySelectorAll('#abilities .abtn[data-k]')){
       const k = b.dataset.k;
       if(k === 'q') continue; // weapon swap has no unlock price
