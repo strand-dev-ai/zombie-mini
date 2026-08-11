@@ -16,10 +16,14 @@
   .abtn{position:relative;width:52px;height:52px;padding:0;margin:0;border-radius:50%;font-size:22px;
     background:rgba(36,48,25,.85);color:#fff;border:3px solid rgba(255,255,255,.4);box-shadow:none}
   .abtn:active{transform:translateY(2px)}
-  .abtn.locked{filter:grayscale(1);opacity:.55}
+  .abtn.locked{background:rgba(30,38,22,.6);border-color:rgba(255,255,255,.2)}
+  .abtn.locked .ico{filter:grayscale(1);opacity:.55} /* dim the icon only — price badge stays full color */
   .abtn .pr{display:none;position:absolute;right:-4px;bottom:-6px;background:#ffd54a;color:#12210a;
     font-size:10px;font-weight:800;border-radius:8px;padding:1px 4px;line-height:1.3}
   .abtn.locked .pr{display:block}
+  .abtn.locked .pr.afford{box-shadow:0 0 4px 2px #fff9c4,0 0 10px 5px #ffd54a;animation:coinglow 1s ease-in-out infinite alternate}
+  @keyframes coinglow{from{box-shadow:0 0 3px 1px #ffd54a} to{box-shadow:0 0 10px 6px #ffd54a}}
+  .gc{filter:sepia(1) saturate(4) brightness(1.05)} /* forces the 🪙 glyph to a solid gold tone (some fonts render it silver) */
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:rgba(10,14,8,.75);color:#fff;z-index:10;text-align:center}
   .hidden{display:none!important}
@@ -82,7 +86,7 @@
 
 <div id="hud">
   <div id="hpbar"><div id="hpfill"></div></div>
-  <div class="stat coin" id="coins">🪙 0</div>
+  <div class="stat coin" id="coins"><span class="gc">🪙</span> 0</div>
   <div class="stat" id="wave">WAVE 1</div>
   <div class="stat" id="score">SCORE 0</div>
   <div class="stat" id="weap">🔫 Machine Gun</div>
@@ -112,13 +116,13 @@
 <div id="movezone" class="touchonly"></div>
 <div id="abilities" class="touchonly">
   <button class="abtn" data-k="q">🔫</button>
-  <button class="abtn" data-k="e">🐕<span class="pr"></span></button>
-  <button class="abtn" data-k="x">🐔<span class="pr"></span></button>
-  <button class="abtn" data-k="r">✈️<span class="pr"></span></button>
-  <button class="abtn" data-k="f">🎭<span class="pr"></span></button>
-  <button class="abtn" data-k=" ">🌀<span class="pr"></span></button>
-  <button class="abtn" data-k="c">💣<span class="pr"></span></button>
-  <button class="abtn" data-k="t">🗼<span class="pr"></span></button>
+  <button class="abtn" data-k="e"><span class="ico">🐕</span><span class="pr"></span></button>
+  <button class="abtn" data-k="x"><span class="ico">🐔</span><span class="pr"></span></button>
+  <button class="abtn" data-k="r"><span class="ico">✈️</span><span class="pr"></span></button>
+  <button class="abtn" data-k="f"><span class="ico">🎭</span><span class="pr"></span></button>
+  <button class="abtn" data-k=" "><span class="ico">🌀</span><span class="pr"></span></button>
+  <button class="abtn" data-k="c"><span class="ico">💣</span><span class="pr"></span></button>
+  <button class="abtn" data-k="t"><span class="ico">🗼</span><span class="pr"></span></button>
 </div>
 
 <div id="perks" class="overlay hidden">
@@ -350,7 +354,7 @@ const PERKS = [
   { id:'fire',     name:'🔥 Fire Trail', desc:'you leave burning ground behind you' },
   { id:'speed',    name:'👟 Fast Legs',  desc:'+15% walk speed' },
   { id:'crit',     name:'💥 Crits',      desc:'+12% chance of 3× damage' },
-  { id:'coin',     name:'🪙 Greed',      desc:'+1 coin per kill' },
+  { id:'coin',     name:'<span class="gc">🪙</span> Greed', desc:'+1 coin per kill' },
   { id:'hp',       name:'❤️ Tough',      desc:'+20 max HP and heal 20' },
 ];
 const xpNext = () => 10 + G.lvl * 12;
@@ -1097,7 +1101,7 @@ const SHOP = [
   // — economy —
   { icon:'🧲', name:'Magnet', base:15, desc:'+40% coin pull radius',
     lvl:()=>G.magnetLvl, buy(){ G.magnetLvl++; G.magnetR *= 1.4; } },
-  { icon:'🪙', name:'Greed', base:30, desc:'+1 coin per kill',
+  { icon:'<span class="gc">🪙</span>', name:'Greed', base:30, desc:'+1 coin per kill',
     lvl:()=>G.perks.coin, buy(){ G.perks.coin++; } },
   { icon:'🏦', name:'Interest', base:60, desc:'+10% coins at the end of every wave (max 3)',
     lvl:()=>G.interestLvl, max:()=>G.interestLvl >= 3, buy(){ G.interestLvl++; } },
@@ -1127,7 +1131,7 @@ function openShop(){
   renderShop();
 }
 function renderShop(){
-  document.getElementById('shopcoins').textContent = `🪙 ${G.coins} coins`;
+  document.getElementById('shopcoins').innerHTML = `<span class="gc">🪙</span> ${G.coins} coins`;
   const box = document.getElementById('items');
   box.innerHTML = '';
   for(const it of SHOP){
@@ -1140,7 +1144,7 @@ function renderShop(){
     b.title = it.name + ' — ' + it.desc;
     b.innerHTML = `<span class="ic">${it.icon}</span><span class="nm">${it.name}</span>
       <span class="lv">${it.once ? (owned ? '✔ owned' : '') : (lvl > 0 ? 'lv ' + lvl : '')}</span>
-      <span class="cost">${owned ? '✔' : maxed ? 'MAX' : '🪙' + cost}</span>`;
+      <span class="cost">${owned ? '✔' : maxed ? 'MAX' : '<span class="gc">🪙</span>' + cost}</span>`;
     b.disabled = owned || maxed || G.coins < cost;
     b.onclick = () => { G.coins -= cost; it.buy(); sfx('buy'); renderShop(); };
     box.appendChild(b);
@@ -1519,7 +1523,7 @@ function draw(){
 function updateHud(){
   const p = G.player;
   document.getElementById('hpfill').style.width = (p.hp / p.maxHp * 100) + '%';
-  document.getElementById('coins').textContent = '🪙 ' + G.coins;
+  document.getElementById('coins').innerHTML = '<span class="gc">🪙</span> ' + G.coins;
   document.getElementById('wave').textContent = 'WAVE ' + G.wave;
   document.getElementById('score').textContent = 'SCORE ' + G.score;
   document.getElementById('weap').textContent = WEAPONS[G.weapon].name + (G.weapons.length > 1 ? '  [Q]' : '');
@@ -1538,8 +1542,8 @@ function updateHud(){
   const cb = document.getElementById('callbtn');
   cb.style.display = state === 'fight' ? 'block' : 'none';
   cb.disabled = G.rush >= 4;
-  cb.textContent = TOUCH ? (G.rush >= 4 ? 'MAX WAVES' : 'NEXT WAVE')
-    : (G.rush >= 4 ? '☠ MAX 5 WAVES!' : `☠ CALL NEXT WAVE +${waveBonus()}🪙 (${G.rush+1}/5)`);
+  cb.innerHTML = TOUCH ? (G.rush >= 4 ? 'MAX WAVES' : 'NEXT WAVE')
+    : (G.rush >= 4 ? '☠ MAX 5 WAVES!' : `☠ CALL NEXT WAVE +${waveBonus()}<span class="gc">🪙</span> (${G.rush+1}/5)`);
 
   if(TOUCH){ // gray out + price-tag ability buttons not bought yet (tap to buy mid-game)
     // hide the ability bar outside of 'fight' so it doesn't ghost through the shop/perks/death overlays
@@ -1551,7 +1555,10 @@ function updateHud(){
       b.classList.toggle('locked', locked);
       if(locked){
         const item = abilityShopItem(k);
-        b.querySelector('.pr').textContent = item ? shopCost(item.base, 0) : '';
+        const cost = item ? shopCost(item.base, 0) : 0;
+        const pr = b.querySelector('.pr');
+        pr.textContent = item ? cost : '';
+        pr.classList.toggle('afford', item && G.coins >= cost); // glow once you can afford it
       }
     }
   }
