@@ -2,10 +2,23 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ZOMBIE MINI</title>
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;background:#1a1f16;font-family:system-ui,sans-serif;user-select:none}
-  canvas{display:block;cursor:none}
+  html,body{margin:0;height:100%;overflow:hidden;background:#1a1f16;font-family:system-ui,sans-serif;user-select:none;touch-action:none;overscroll-behavior:none}
+  canvas{display:block;cursor:none;touch-action:none}
+  .touchonly{display:none}
+  body.touch #joystick{display:block}
+  body.touch #abilities{display:flex}
+  #joystick{position:fixed;left:22px;bottom:22px;width:110px;height:110px;border-radius:50%;
+    background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.3);z-index:7}
+  #stick{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;
+    border-radius:50%;background:rgba(255,255,255,.5);border:3px solid rgba(0,0,0,.4);pointer-events:none}
+  #abilities{position:fixed;right:14px;bottom:14px;z-index:7;flex-wrap:wrap-reverse;width:180px;
+    justify-content:flex-end;gap:6px}
+  .abtn{width:52px;height:52px;padding:0;margin:0;border-radius:50%;font-size:22px;
+    background:rgba(36,48,25,.85);color:#fff;border:3px solid rgba(255,255,255,.4);box-shadow:none}
+  .abtn:active{transform:translateY(2px)}
   .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:rgba(10,14,8,.75);color:#fff;z-index:10;text-align:center}
   .hidden{display:none!important}
@@ -76,6 +89,18 @@
 <div id="abar"></div>
 <button id="callbtn">☠ CALL NEXT WAVE</button>
 
+<div id="joystick" class="touchonly"><div id="stick"></div></div>
+<div id="abilities" class="touchonly">
+  <button class="abtn" data-k="q">🔫</button>
+  <button class="abtn" data-k="e">🐕</button>
+  <button class="abtn" data-k="x">🐔</button>
+  <button class="abtn" data-k="r">✈️</button>
+  <button class="abtn" data-k="f">🎭</button>
+  <button class="abtn" data-k=" ">🌀</button>
+  <button class="abtn" data-k="c">💣</button>
+  <button class="abtn" data-k="t">🗼</button>
+</div>
+
 <div id="perks" class="overlay hidden">
   <h1 style="font-size:38px;color:#ffd54a">LEVEL UP!</h1>
   <div class="sub">pick a perk</div>
@@ -134,39 +159,98 @@ function tryActive(name, fn){
   const a = G.actives[name];
   if(a.lvl > 0 && a.cd <= 0){ a.cd = ACT_CD[name]; fn(a.lvl); }
 }
+function swapWeapon(){
+  if(G && G.weapons.length > 1){
+    G.weapon = G.weapons[(G.weapons.indexOf(G.weapon)+1) % G.weapons.length];
+    sfx('buy');
+  }
+}
+// shared by keyboard (e/x/r/f/space/c/t) and mobile ability buttons
+function doAbility(k){
+  if(!(G && state === 'fight' && !paused)) return;
+  if(k === 'e') tryActive('dog',     l => spawnCritters('dog', 1, 8, 15*l));
+  if(k === 'x') tryActive('chicken', l => spawnCritters('chicken', 8, 5, 6*l));
+  if(k === 'r') tryActive('strike',  l => airstrike(l));
+  if(k === 'f') tryActive('decoy',   l => dropDecoy(l));
+  if(k === ' ') tryActive('shock',   l => shockwave(l));
+  if(k === 'c'){
+    const m = G.actives.mine;
+    if(m.stock > 0){ m.stock--; G.mines.push({x:G.player.x, y:G.player.y, lvl:m.lvl}); sfx('buy'); }
+  }
+  if(k === 't' && G.turretStock > 0){
+    G.turretStock--;
+    G.turrets.push({x:G.player.x, y:G.player.y, aim:0, fireT:0});
+    sfx('buy');
+  }
+}
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   keys[k] = true;
   if(k === ' ') e.preventDefault();
   if(k === 'p') paused = !paused;
-  if(k === 'q' && G && G.weapons.length > 1){
-    G.weapon = G.weapons[(G.weapons.indexOf(G.weapon)+1) % G.weapons.length];
-    sfx('buy');
-  }
-  if(G && state === 'fight' && !paused){
-    if(k === 'e') tryActive('dog',     l => spawnCritters('dog', 1, 8, 15*l));
-    if(k === 'x') tryActive('chicken', l => spawnCritters('chicken', 8, 5, 6*l));
-    if(k === 'r') tryActive('strike',  l => airstrike(l));
-    if(k === 'f') tryActive('decoy',   l => dropDecoy(l));
-    if(k === ' ') tryActive('shock',   l => shockwave(l));
-    if(k === 'c'){
-      const m = G.actives.mine;
-      if(m.stock > 0){ m.stock--; G.mines.push({x:G.player.x, y:G.player.y, lvl:m.lvl}); sfx('buy'); }
-    }
-    if(k === 't' && G.turretStock > 0){
-      G.turretStock--;
-      G.turrets.push({x:G.player.x, y:G.player.y, aim:0, fireT:0});
-      sfx('buy');
-    }
-    if(k === 'enter'){ // force-end wave (rescue for zombies stuck off-screen)
-      G.zombies = [];
-      G.spawnQueue = 0;
-    }
+  if(k === 'q') swapWeapon();
+  doAbility(k);
+  if(k === 'enter' && G && state === 'fight' && !paused){ // force-end wave (rescue for zombies stuck off-screen)
+    G.zombies = [];
+    G.spawnQueue = 0;
   }
   if(k === 'enter' && G && state === 'shop' && !document.getElementById('shop').classList.contains('hidden'))
     document.getElementById('nextbtn').click();
 });
 addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
+
+// ===== mobile: touch joystick + ability buttons =====
+const TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+if(TOUCH){
+  document.body.classList.add('touch');
+
+  (function joystick(){
+    const zone = document.getElementById('joystick'), stick = document.getElementById('stick');
+    let id = null, cx = 0, cy = 0;
+    const max = 40, dead = 8;
+    function setDir(dx, dy){
+      keys.w = keys.a = keys.s = keys.d = false;
+      if(Math.hypot(dx,dy) < dead) return;
+      const ang = Math.atan2(dy,dx);
+      if(Math.cos(ang) >  .3) keys.d = true;
+      if(Math.cos(ang) < -.3) keys.a = true;
+      if(Math.sin(ang) >  .3) keys.s = true;
+      if(Math.sin(ang) < -.3) keys.w = true;
+    }
+    zone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.changedTouches[0]; id = t.identifier;
+      const r = zone.getBoundingClientRect(); cx = r.left + r.width/2; cy = r.top + r.height/2;
+    });
+    zone.addEventListener('touchmove', e => {
+      for(const t of e.changedTouches){
+        if(t.identifier !== id) continue;
+        e.preventDefault();
+        let dx = t.clientX - cx, dy = t.clientY - cy;
+        const mag = Math.hypot(dx,dy);
+        if(mag > max){ dx = dx/mag*max; dy = dy/mag*max; }
+        stick.style.transform = `translate(${dx}px,${dy}px)`;
+        setDir(dx,dy);
+      }
+    }, {passive:false});
+    function end(e){
+      for(const t of e.changedTouches){
+        if(t.identifier !== id) continue;
+        id = null; stick.style.transform = ''; setDir(0,0);
+      }
+    }
+    zone.addEventListener('touchend', end);
+    zone.addEventListener('touchcancel', end);
+  })();
+
+  document.querySelectorAll('#abilities .abtn').forEach(b => {
+    b.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const k = b.dataset.k;
+      if(k === 'q') swapWeapon(); else doAbility(k);
+    });
+  });
+}
 
 // ===== game state =====
 let state = 'start'; // start | fight | shop | dead
