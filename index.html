@@ -209,6 +209,23 @@ function doAbility(k){
     sfx('buy');
   }
 }
+// ability key -> current level + matching SHOP entry, used by mobile ability buttons
+// (SHOP/shopCost are declared later in the file but this only runs after full load)
+const ABIL_TAG = { e:'[E]', x:'[X]', r:'[R]', f:'[F]', ' ':'[␣]', c:'[C]', t:'[T]' };
+function abilityLvl(k){
+  if(k === 'c') return G.actives.mine.lvl;
+  if(k === 't') return G.turretLvl;
+  const ak = { e:'dog', x:'chicken', r:'strike', f:'decoy', ' ':'shock' }[k];
+  return ak ? G.actives[ak].lvl : 0;
+}
+function abilityShopItem(k){ return SHOP.find(it => it.name.includes(ABIL_TAG[k])); }
+function buyAbility(k){ // mid-game purchase from a locked mobile ability button
+  const item = abilityShopItem(k);
+  if(!item) return false;
+  const cost = shopCost(item.base, 0);
+  if(G.coins < cost) return false;
+  G.coins -= cost; item.buy(); sfx('buy'); return true;
+}
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   keys[k] = true;
@@ -278,7 +295,9 @@ if(TOUCH){
     b.addEventListener('touchstart', e => {
       e.preventDefault();
       const k = b.dataset.k;
-      if(k === 'q') swapWeapon(); else doAbility(k);
+      if(k === 'q') swapWeapon();
+      else if(abilityLvl(k) === 0) buyAbility(k); // locked: tap to buy instead of use
+      else doAbility(k);
     });
   });
 }
@@ -1531,17 +1550,14 @@ function updateHud(){
   cb.textContent = TOUCH ? (G.rush >= 4 ? 'MAX WAVES' : 'NEXT WAVE')
     : (G.rush >= 4 ? '☠ MAX 5 WAVES!' : `☠ CALL NEXT WAVE +${waveBonus()}🪙 (${G.rush+1}/5)`);
 
-  if(TOUCH){ // gray out + price-tag ability buttons not bought yet
-    const LVL = { e:G.actives.dog.lvl, x:G.actives.chicken.lvl, r:G.actives.strike.lvl,
-                  f:G.actives.decoy.lvl, ' ':G.actives.shock.lvl, c:G.actives.mine.lvl, t:G.turretLvl };
-    const TAG = { e:'[E]', x:'[X]', r:'[R]', f:'[F]', ' ':'[␣]', c:'[C]', t:'[T]' };
+  if(TOUCH){ // gray out + price-tag ability buttons not bought yet (tap to buy mid-game)
     for(const b of document.querySelectorAll('#abilities .abtn[data-k]')){
       const k = b.dataset.k;
       if(k === 'q') continue; // weapon swap has no unlock price
-      const locked = LVL[k] === 0;
+      const locked = abilityLvl(k) === 0;
       b.classList.toggle('locked', locked);
       if(locked){
-        const item = SHOP.find(it => it.name.includes(TAG[k]));
+        const item = abilityShopItem(k);
         b.querySelector('.pr').textContent = item ? shopCost(item.base, 0) : '';
       }
     }
